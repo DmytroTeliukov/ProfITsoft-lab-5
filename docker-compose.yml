@@ -1,22 +1,90 @@
 version: "3.9"
 
 services:
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    container_name: zookeeper
+    networks:
+      - shared-network
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
+    networks:
+      - shared-network
+    ports:
+      - '9092:9092'
+      - '9094:9094'
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    depends_on:
+      - zookeeper
+
+
   elasticsearch:
-    image: elasticsearch:8.6.1
+    image: elasticsearch:8.14.0
     container_name: elasticsearch
+    healthcheck:
+      test: [ "CMD", "curl",  "--fail" , "http://elasticsearch:9200/_cluster/health?wait_for_status=green&timeout=1s", "||", "exit", "1" ]
+      interval: 5s
+      timeout: 3s
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - node.name=odfe-node
+      - discovery.seed_hosts=odfe-node
+      - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-    volumes:
-      - ./data:/usr/share/elasticsearch/data
+      - "ES_JAVA_OPTS=-Xms4096m -Xmx4096m"
     ports:
-     - "9200:9200"
+      - "9200:9200"
+    networks:
+      - shared-network
 
   kibana:
-    image: kibana:8.6.1
+    image: kibana:8.14.0
     container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - shared-network
     ports:
       - "5601:5601"
     depends_on:
       - elasticsearch
+
+  email-sender-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    container_name: email-sender-service
+    restart: on-failure
+    ports:
+      - "9097:9097"
+    depends_on:
+      - elasticsearch
+      - kibana
+      - kafka
+      - zookeeper
+    networks:
+      - shared-network
+    environment:
+      - ELASTICSEARCH_ADDRESS=elasticsearch:9200
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+
+networks:
+  shared-network:
