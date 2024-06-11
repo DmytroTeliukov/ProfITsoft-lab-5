@@ -4,11 +4,9 @@ import dev.profitsoft.jfd.elasticsample.ElasticSampleApplication;
 import dev.profitsoft.jfd.elasticsample.config.TestElasticsearchConfiguration;
 import dev.profitsoft.jfd.elasticsample.constant.EmailStatus;
 import dev.profitsoft.jfd.elasticsample.data.EmailMessageData;
-import dev.profitsoft.jfd.elasticsample.extension.ElasticsearchExtension;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +17,6 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,7 +25,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 
-//@ExtendWith({ElasticsearchExtension.class, SpringExtension.class})
 @SpringBootTest
 @ContextConfiguration(classes = {ElasticSampleApplication.class, TestElasticsearchConfiguration.class})
 @DirtiesContext
