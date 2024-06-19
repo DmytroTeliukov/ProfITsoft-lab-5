@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class EmailController {
   @Value("${kafka.topic.emailReceived}")
-  private String paymentReceivedTopic;
+  private String emailReceivedTopic;
 
   private final KafkaOperations<String, EmailReceivedDto> kafkaOperations;
 
@@ -35,7 +34,7 @@ public class EmailController {
             .build();
 
 
-    kafkaOperations.send(paymentReceivedTopic, email);
+    kafkaOperations.send(emailReceivedTopic, email);
 
     return RestResponse.OK;
   }
